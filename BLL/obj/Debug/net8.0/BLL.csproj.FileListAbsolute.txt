@@ -1,0 +1,15 @@
+D:\API Projects\Restaurant\BLL\bin\Debug\net8.0\BLL.deps.json
+D:\API Projects\Restaurant\BLL\bin\Debug\net8.0\BLL.dll
+D:\API Projects\Restaurant\BLL\bin\Debug\net8.0\BLL.pdb
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.GeneratedMSBuildEditorConfig.editorconfig
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.AssemblyInfoInputs.cache
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.AssemblyInfo.cs
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.csproj.CoreCompileInputs.cache
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.dll
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\refint\BLL.dll
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.pdb
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\ref\BLL.dll
+D:\API Projects\Restaurant\BLL\bin\Debug\net8.0\DAL.dll
+D:\API Projects\Restaurant\BLL\bin\Debug\net8.0\DAL.pdb
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.csproj.AssemblyReference.cache
+D:\API Projects\Restaurant\BLL\obj\Debug\net8.0\BLL.csproj.Up2Date
