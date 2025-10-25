@@ -19,17 +19,15 @@ namespace BLL.Repositories
         {
             db = Db;
         }
-        public int Add(T entity)
+        public void Add(T entity)
         {
             db.Set<T>().Add(entity);
-            return db.SaveChanges();
         }
 
-        public int Delete(int id)
+        public void Delete(int id)
         {
             var entity = db.Set<T>().Find(id);
             db.Set<T>().Remove(entity);
-            return db.SaveChanges();
         }
 
         public IQueryable<T> GetAll()
@@ -42,15 +40,9 @@ namespace BLL.Repositories
            return db.Set<T>().Find(id);
         }
 
-        public T GetByCondition(Expression<Func<T, bool>> predicate)
-        {
-            return db.Set<T>().FirstOrDefault(predicate);
-        }
-
-        public int Update(T entity)
+        public void Update(T entity)
         {
            db.Set<T>().Update(entity);
-              return db.SaveChanges();
         }
     }
 }

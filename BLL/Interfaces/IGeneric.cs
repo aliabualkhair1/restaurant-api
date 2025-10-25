@@ -12,9 +12,8 @@ namespace BLL.Interfaces
     {
         IQueryable<T> GetAll();
         T GetById(int id);
-        int Add(T entity);
-        int Update(T entity);
-        int Delete(int id);
-        T GetByCondition(Expression<Func<T, bool>> predicate);
+        void Add(T entity);
+        void Update(T entity);
+        void Delete(int id);
     }
 }
