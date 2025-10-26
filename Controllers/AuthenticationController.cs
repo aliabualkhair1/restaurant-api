@@ -43,6 +43,16 @@ namespace Restaurant.Controllers
                 Email = reg.Email,
             };
             _user.IsDeleted = false;
+            if (reg.Username.Length < 3 || reg.Username.Length > 20 )
+            {
+                ModelState.AddModelError(reg.Username, "Username must be between 3 and 20 characters");
+                return BadRequest(ModelState);
+            }
+            if (reg.Password.Length < 6 || reg.Password.Length > 20)
+            {
+                ModelState.AddModelError(reg.Password, "Password must be between 6 and 20 characters");
+                return BadRequest(ModelState);
+            }
             var result = await user.CreateAsync(_user, reg.Password);
             if (result.Succeeded)
             {
@@ -51,7 +61,7 @@ namespace Restaurant.Controllers
             }
             foreach (var err in result.Errors)
             {
-                ModelState.AddModelError("", "An Error Occured Please Try Again");
+                ModelState.AddModelError("",err.Description);
             }
             return BadRequest(ModelState);
         }
@@ -123,7 +133,7 @@ namespace Restaurant.Controllers
                     }
                     else
                     {
-                        return Unauthorized();
+                        return Unauthorized("Username Or Password Is Invalid ");
                     }
                 }
                 return BadRequest(ModelState);
@@ -142,7 +152,12 @@ namespace Restaurant.Controllers
                 {
                     return BadRequest("This email not registered");
                 }
-                 var change = await user.ChangePasswordAsync(check, FACP.CurrentPassword, FACP.NewPassword);
+                if (FACP.NewPassword.Length < 6 || FACP.NewPassword.Length > 20)
+                {
+                    ModelState.AddModelError(FACP.NewPassword, "New Password must be between 6 and 20 characters");
+                    return BadRequest(ModelState);
+                }
+                var change = await user.ChangePasswordAsync(check, FACP.CurrentPassword, FACP.NewPassword);
                 if (!change.Succeeded)
                 {
                     return BadRequest(change.Errors);

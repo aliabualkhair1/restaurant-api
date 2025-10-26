@@ -48,6 +48,19 @@ builder.Services.AddAuthorization(option =>
         policy.Requirements.Add(new AuthorizationRequirment());
     });
 });
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+})
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<RestaurantDB>()
+    .AddSignInManager<SignInManager<ApplicationUser>>()
+    .AddDefaultTokenProviders();
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<RestaurantDB>();
 builder.Services.AddCustomJwtAuth(builder.Configuration);
@@ -65,28 +78,31 @@ app.Use(async (context, next) =>
 {
     await next();
 
-    if (context.Response.StatusCode == 401)
+    if (!context.Response.HasStarted)
     {
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync("{\"error\": \"You must login first\"}");
-    }
-
-    if (context.Response.StatusCode == 403)
-    {
-        context.Response.ContentType = "application/json";
-        var errorType = context.Response.Headers["auth"].ToString();
-
-        if (errorType == "InvalidToken")
+        if (context.Response.StatusCode == 401)
         {
-            await context.Response.WriteAsync("{\"error\": \"Session expired, please login again.\"}");
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"error\": \"You must login first\"}");
         }
-        else if (errorType == "UserNotFound")
+
+        if (context.Response.StatusCode == 403)
         {
-            await context.Response.WriteAsync("{\"error\": \"User not found\"}");
-        }
-        else
-        {
-            await context.Response.WriteAsync("{\"error\": \"You are not allowed to access this resource.\"}");
+            context.Response.ContentType = "application/json";
+            var errorType = context.Response.Headers["auth"].ToString();
+
+            if (errorType == "InvalidToken")
+            {
+                await context.Response.WriteAsync("{\"error\": \"Session expired, please login again.\"}");
+            }
+            else if (errorType == "UserNotFound")
+            {
+                await context.Response.WriteAsync("{\"error\": \"User not found\"}");
+            }
+            else
+            {
+                await context.Response.WriteAsync("{\"error\": \"You are not allowed to access this resource.\"}");
+            }
         }
     }
 });
