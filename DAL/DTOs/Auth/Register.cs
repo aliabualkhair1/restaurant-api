@@ -10,15 +10,22 @@ namespace DAL.DTOs.Auth
     public class Register
     {
         [Required]
+        public string FirstName { get; set; }
+        [Required]
+        public string LastName { get; set; }
+        [Required]
+        public string PhoneNumber { get; set; }
+        [Required]
+        public string NationalId { get; set; }
+        [Required]
         public string Username { get; set; }
         [Required]
         [EmailAddress]
         public string Email { get; set; }
         [Required]
-        [StringLength(10,MinimumLength =8,ErrorMessage ="Password must be between 8 to 10 letter")]
         public string Password { get; set; }
         [Required]
-        [Compare(nameof(Password),ErrorMessage ="Two Passwords Not the same PLZ try again")]
+        [Compare(nameof(Password),ErrorMessage ="Two Passwords Not the same Please try again")]
         public string ConfirmPassword { get; set; }
     }
 }

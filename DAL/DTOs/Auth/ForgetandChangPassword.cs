@@ -12,7 +12,6 @@ namespace DAL.DTOs.Auth
         [Required]
         [EmailAddress]
         public string Email { get; set; }
-        [StringLength(10, MinimumLength = 8, ErrorMessage = "Password must be between 8 to 10 letter")]
         [Required]
         public string CurrentPassword { get; set; }
         public string NewPassword { get; set; }

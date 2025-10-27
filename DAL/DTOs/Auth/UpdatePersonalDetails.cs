@@ -9,6 +9,10 @@ namespace DAL.DTOs.Auth
 {
     public class UpdatePersonalDetails
     {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? NationalId { get; set; }
         public string? Username { get; set; }
          public string? Email { get; set; }
         [StringLength(10, MinimumLength = 8, ErrorMessage = "Password must be between 8 to 10 letter")]
