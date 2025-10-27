@@ -68,6 +68,15 @@ builder.Services.AddSwaggerGenAuth();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthorizationHandler,Restaurant.AuthorizationPipline.TokenHandler>();
 builder.Services.AddAutoMapper(typeof(MapProfile).Assembly);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.WithOrigins("http://localhost:4200/")
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -105,15 +114,6 @@ app.Use(async (context, next) =>
             }
         }
     }
-});
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", builder =>
-    {
-        builder.WithOrigins("http://localhost:4200/")
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
 });
 if (app.Environment.IsDevelopment())
 {
