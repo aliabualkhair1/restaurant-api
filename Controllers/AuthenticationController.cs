@@ -39,10 +39,34 @@ namespace Restaurant.Controllers
         {
             var _user = new ApplicationUser
             {
+                FirstName = reg.FirstName,
+                LastName = reg.LastName,
+                PhoneNumber = reg.PhoneNumber,
+                NationalId = reg.NationalId,
                 UserName = reg.Username,
                 Email = reg.Email,
             };
             _user.IsDeleted = false;
+            if (reg.FirstName.Length < 3 || reg.FirstName.Length > 12)
+            {
+                ModelState.AddModelError(reg.FirstName, "First Name must be between 3 and 12 characters");
+                return BadRequest(ModelState);
+            }
+            if (reg.LastName.Length < 3 || reg.LastName.Length > 12)
+            {
+                ModelState.AddModelError(reg.LastName, "Last Name must be between 3 and 12 characters");
+                return BadRequest(ModelState);
+            }
+            if (reg.PhoneNumber.Length!=11)
+            {
+                ModelState.AddModelError(reg.PhoneNumber, "Phone Number must be 11 Number");
+                return BadRequest(ModelState);
+            }
+            if (reg.NationalId.Length!=14)
+            {
+                ModelState.AddModelError(reg.NationalId, "National Id must be 14 Number");
+                return BadRequest(ModelState);
+            }
             if (reg.Username.Length < 3 || reg.Username.Length > 20 )
             {
                 ModelState.AddModelError(reg.Username, "Username must be between 3 and 20 characters");
@@ -71,24 +95,24 @@ namespace Restaurant.Controllers
         {
             if (ModelState.IsValid)
             {
-                var Username = await user.FindByNameAsync(signIn.Username);
+                var User = await user.FindByEmailAsync(signIn.Email);
                 var RefreshToken = new GenerateRefreshToken();
                 var Token = RefreshToken.GeneraterefreshToken();
 
-                if (Username != null)
+                if (User != null)
                 {
-                    var pass = await user.CheckPasswordAsync(Username, signIn.Password);
+                    var pass = await user.CheckPasswordAsync(User, signIn.Password);
                     if (pass)
                     {
                         var claims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.NameIdentifier, Username.Id.ToString()),
-                    new Claim(ClaimTypes.Name, signIn.Username),
+                    new Claim(ClaimTypes.NameIdentifier, User.Id.ToString()),
+                    new Claim(ClaimTypes.Email, signIn.Email),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim("token_version", Username.TokenVersion.ToString())
+                    new Claim("token_version", User.TokenVersion.ToString())
                 };
 
-                        var roles = await user.GetRolesAsync(Username);
+                        var roles = await user.GetRolesAsync(User);
                         foreach (var role in roles)
                             claims.Add(new Claim(ClaimTypes.Role, role));
 
@@ -104,7 +128,7 @@ namespace Restaurant.Controllers
                         );
 
                         var oldRefreshToken = await db.Set<RefreshToken>()
-                            .FirstOrDefaultAsync(rt => rt.UserId == Username.Id && !rt.IsRevoked);
+                            .FirstOrDefaultAsync(rt => rt.UserId == User.Id && !rt.IsRevoked);
 
                         if (oldRefreshToken != null)
                         {
@@ -115,7 +139,7 @@ namespace Restaurant.Controllers
                         var newRefresh = new RefreshToken
                         {
                             Token = Token,
-                            UserId = Username.Id,
+                            UserId = User.Id,
                             ExpireDate = DateTime.UtcNow.AddDays(10),
                             IsRevoked = false
                         };

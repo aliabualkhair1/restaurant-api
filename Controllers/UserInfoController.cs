@@ -68,6 +68,14 @@ namespace Restaurant.Controllers
                 if (!passwordResult.Succeeded)
                     return BadRequest(passwordResult.Errors);
             }
+            if (!string.IsNullOrWhiteSpace(_user.FirstName))
+                userDetails.FirstName = _user.FirstName;
+            if (!string.IsNullOrWhiteSpace(_user.LastName))
+                userDetails.LastName = _user.LastName;
+            if (!string.IsNullOrWhiteSpace(_user.PhoneNumber))
+                userDetails.PhoneNumber = _user.PhoneNumber;
+            if (!string.IsNullOrWhiteSpace(_user.NationalId))
+                userDetails.NationalId = _user.NationalId;
             if (!string.IsNullOrWhiteSpace(_user.Username))
                 userDetails.UserName = _user.Username;
             var emailaddress = new EmailAddressAttribute();
@@ -106,7 +114,7 @@ namespace Restaurant.Controllers
         public async Task<IActionResult> Restore(SignIn signin)
         {
 
-            var check = await user.FindByNameAsync(signin.Username);
+            var check = await user.FindByEmailAsync(signin.Email);
             if (check != null&&check.IsDeleted==true)
             {
                var password=await user.CheckPasswordAsync(check,signin.Password);

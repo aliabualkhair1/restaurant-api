@@ -106,12 +106,21 @@ app.Use(async (context, next) =>
         }
     }
 });
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.WithOrigins("http://localhost:4200/")
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseCors("AllowAll");
 app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseRateLimiter();
