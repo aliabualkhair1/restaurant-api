@@ -29,7 +29,6 @@ namespace BLL.Repositories
             var entity = db.Set<T>().Find(id);
             db.Set<T>().Remove(entity);
         }
-
         public IQueryable<T> GetAll()
         {
            return  db.Set<T>();
