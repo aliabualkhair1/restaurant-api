@@ -11,9 +11,10 @@ namespace DAL.DTOs.SetUp
         public int Id { get; set; }
         public string UserId { get; set; }
         public string Username { get; set; }
+        public DateOnly OrderDate { get; set; }
         public int OrderId { get; set; }
         public string Comment { get; set; }
         public int Rating { get; set; }
-        public DateTime SubmittedOn { get; set; }
+        public DateOnly SubmittedOn { get; set; }
     }
 }

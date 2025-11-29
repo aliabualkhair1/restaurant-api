@@ -10,9 +10,6 @@ namespace DAL.DTOs.Auth
     public class ForgetandChangPassword
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; }
-        [Required]
         public string CurrentPassword { get; set; }
         public string NewPassword { get; set; }
         [Compare(nameof(NewPassword), ErrorMessage = "Two Passwords Not the same PLZ try again")]

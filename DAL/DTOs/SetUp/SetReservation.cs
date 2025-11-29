@@ -17,7 +17,11 @@ namespace DAL.DTOs.SetUp
         public Location TableLocation  { get; set; }
         public int NumberOfGuests { get; set; }
         public DateOnly DateOfReservation { get; set; }
-        public TimeOnly StartDate { get; set; }
-        public TimeOnly EndDate { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
+        public bool IsPaid { get; set; }
+        public bool IsDeleted { get; set; }
+        public bool IsPermanentDelete { get; set; }
+
     }
 }

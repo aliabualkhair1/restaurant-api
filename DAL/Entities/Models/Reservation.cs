@@ -15,8 +15,8 @@ namespace DAL.Entities.Models
         public int TableId { get; set; }
         public Tables Table { get; set; }
         public DateOnly DateOfReservation { get; set; }
-        public TimeOnly StartDate { get; set; }
-        public TimeOnly EndDate { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
         public int NumberOfGuests { get; set; }
         public ReservationStatus ReservationStatus { get; set; }
         public DateTime? DeletionDate { get; set; } = null;

@@ -11,6 +11,6 @@ namespace DAL.DTOs.SetUp
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public ICollection<SetMenu> Menu { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }

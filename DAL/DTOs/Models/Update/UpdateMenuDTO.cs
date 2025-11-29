@@ -8,5 +8,6 @@ namespace DAL.DTOs.Models.Update
         public int? CategoryId { get; set; }
         public string? MenuName { get; set; }
         public string? Description { get; set; }
+        public bool? IsAvailable { get; set; }
     }
 }

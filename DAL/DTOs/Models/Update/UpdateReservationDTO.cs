@@ -10,8 +10,9 @@ namespace DAL.DTOs.Models.Update
     {
         public int? TableId { get; set; }
         public DateOnly? DateOfReservation { get; set; }
-        public TimeOnly? StartDate { get; set; }
-        public TimeOnly? EndDate { get; set; }
+        public TimeSpan? StartTime { get; set; }
+        public TimeSpan? EndTime { get; set; }
+
         public int? NumberOfGuests { get; set; }
     }
 }

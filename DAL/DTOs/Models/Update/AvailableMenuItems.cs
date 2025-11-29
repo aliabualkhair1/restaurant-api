@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace DAL.DTOs.Models.Update
 {
-    public class UpdateReservationFeedbackDTO
+    public class AvailableMenuItems
     {
-        public string? Comment { get; set; }
-        public int? Rating { get; set; }
+        public int Quantity { get; set; }
     }
 }

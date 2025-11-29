@@ -13,6 +13,8 @@ namespace DAL.DTOs.SetUp
         public string Name { get; set; }
         public string Description { get; set; }
         public int CategoryId { get; set; }
+        public string CategoryName { get; set; }
+        public bool IsDeleted { get; set; }
         public bool IsAvailable { get; set; }
         public ICollection<SetMenuItems> MenuItems { get; set; }
     }
