@@ -38,7 +38,8 @@ Limit.AddFixedWindowLimiter("Fixed", option =>
 Limit.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = 429;
-        await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", token);
+        context.HttpContext.Response.ContentType = "text/plain; charset=utf-8";
+        await context.HttpContext.Response.WriteAsync("كثير من الطلبات حاول مجددا فى وقت لاحق", token);
     };
 });
 builder.Services.AddAuthorization(option =>
@@ -53,7 +54,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireNonAlphanumeric = true;
     options.Password.RequiredLength = 6;
     options.User.RequireUniqueEmail = true;
 })
@@ -72,9 +73,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.WithOrigins("http://localhost:4200/")
-               .AllowAnyMethod()
-               .AllowAnyHeader();
+        builder.WithOrigins("https://restaurantapp-bice.vercel.app")
+       .AllowAnyMethod()
+       .AllowAnyHeader();
     });
 });
 var app = builder.Build();
@@ -92,7 +93,7 @@ app.Use(async (context, next) =>
         if (context.Response.StatusCode == 401)
         {
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync("{\"error\": \"You must login first\"}");
+            await context.Response.WriteAsync("{\"error\": \"يجب تسجيل الدخول أولا\"}");
         }
 
         if (context.Response.StatusCode == 403)
@@ -102,15 +103,15 @@ app.Use(async (context, next) =>
 
             if (errorType == "InvalidToken")
             {
-                await context.Response.WriteAsync("{\"error\": \"Session expired, please login again.\"}");
+                await context.Response.WriteAsync("{\"error\": \"انتهت الجلسة أعد تسجيل الدخول مجددا\"}");
             }
             else if (errorType == "UserNotFound")
             {
-                await context.Response.WriteAsync("{\"error\": \"User not found\"}");
+                await context.Response.WriteAsync("{\"error\": \"هذا المستخدم غير موجود\"}");
             }
             else
             {
-                await context.Response.WriteAsync("{\"error\": \"You are not allowed to access this resource.\"}");
+                await context.Response.WriteAsync("{\"error\": \"غير مسموح لك\"}");
             }
         }
     }
@@ -120,9 +121,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseCors("AllowAll");
-app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseCors("AllowAll");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
