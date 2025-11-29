@@ -217,8 +217,8 @@ namespace Restaurant.Controllers
                         TableLocation = res.Table.Location,
                         NumberOfGuests = res.NumberOfGuests,
                         DateOfReservation = res.DateOfReservation,
-                        StartDate = res.StartDate,
-                        EndDate = res.EndDate,
+                        StartTime = res.StartTime,
+                        EndTime = res.EndTime,
                         IsPaid = res.IsPaid
                     });
                     return Ok(AllReservations);
@@ -245,8 +245,8 @@ namespace Restaurant.Controllers
                         TableLocation = res.Table.Location,
                         NumberOfGuests = res.NumberOfGuests,
                         DateOfReservation = res.DateOfReservation,
-                        StartDate = res.StartDate,
-                        EndDate = res.EndDate,
+                        StartTime = res.StartTime,
+                        EndTime = res.EndTime,
                         IsPaid = res.IsPaid
                     });
                     return Ok(AllReservations);
@@ -507,8 +507,8 @@ namespace Restaurant.Controllers
                         TableLocation = res.Table.Location,
                         NumberOfGuests = res.NumberOfGuests,
                         DateOfReservation = res.DateOfReservation,
-                        StartDate = res.StartDate,
-                        EndDate = res.EndDate,
+                        StartTime = res.StartTime,
+                        EndTime = res.EndTime,
                         IsPaid = res.IsPaid
                     });
                     return Ok(reservationspaid);
@@ -537,8 +537,8 @@ namespace Restaurant.Controllers
                         TableLocation = res.Table.Location,
                         NumberOfGuests = res.NumberOfGuests,
                         DateOfReservation = res.DateOfReservation,
-                        StartDate = res.StartDate,
-                        EndDate = res.EndDate,
+                        StartTime = res.StartTime,
+                        EndTime = res.EndTime,
                         IsPaid = res.IsPaid
                     });
                     return Ok(reservationspaid);
@@ -567,8 +567,8 @@ namespace Restaurant.Controllers
                         TableLocation = res.Table.Location,
                         NumberOfGuests = res.NumberOfGuests,
                         DateOfReservation = res.DateOfReservation,
-                        StartDate = res.StartDate,
-                        EndDate = res.EndDate,
+                        StartTime = res.StartTime,
+                        EndTime = res.EndTime,
                     });
                     return Ok(reservationscancelled);
                 }
@@ -596,8 +596,8 @@ namespace Restaurant.Controllers
                         TableLocation = res.Table.Location,
                         NumberOfGuests = res.NumberOfGuests,
                         DateOfReservation = res.DateOfReservation,
-                        StartDate = res.StartDate,
-                        EndDate = res.EndDate
+                        StartTime = res.StartTime,
+                        EndTime = res.EndTime,
                     });
                     return Ok(reservationscancelled);
                 }

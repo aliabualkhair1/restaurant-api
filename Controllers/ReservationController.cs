@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Security.Claims;
 
 namespace Restaurant.Controllers
@@ -38,26 +37,29 @@ namespace Restaurant.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId != null)
             {
-                var AllReservations = unitOfWork.Generic<Reservation>().GetAll().Where(res => res.IsDeleted == false && res.UserId == userId).Select(res => new SetReservation
-                {
-                    ReservationId = res.Id,
-                    Status = res.ReservationStatus,
-                    UserId = res.UserId,
-                    Username = res.User.UserName,
-                    TableNumber = res.Table.TableNumber,
-                    TableLocation = res.Table.Location,
-                    NumberOfGuests = res.NumberOfGuests,
-                    DateOfReservation = res.DateOfReservation,
-                    StartDate = res.StartDate,
-                    EndDate = res.EndDate,
-                    IsPaid=res.IsPaid,
-                    IsDeleted=res.IsDeleted,
-                    IsPermanentDelete=res.IsPermanentDelete
-                });
+                var AllReservations = unitOfWork.Generic<Reservation>().GetAll()
+                    .Where(res => res.IsDeleted == false && res.UserId == userId)
+                    .Select(res => new SetReservation
+                    {
+                        ReservationId = res.Id,
+                        Status = res.ReservationStatus,
+                        UserId = res.UserId,
+                        Username = res.User.UserName,
+                        TableNumber = res.Table.TableNumber,
+                        TableLocation = res.Table.Location,
+                        NumberOfGuests = res.NumberOfGuests,
+                        DateOfReservation = res.DateOfReservation,
+                        StartTime = res.StartTime,
+                        EndTime = res.EndTime,
+                        IsPaid = res.IsPaid,
+                        IsDeleted = res.IsDeleted,
+                        IsPermanentDelete = res.IsPermanentDelete
+                    });
                 return Ok(AllReservations);
             }
             return Unauthorized("غير مصرح لك بالوصول.");
         }
+
         [HttpGet("GetByDate")]
         [Authorize(Roles = "Staff,Customer,Admin,AdminAssistant")]
         public IActionResult GetReservationByDate(DateOnly date)
@@ -81,8 +83,8 @@ namespace Restaurant.Controllers
                     TableLocation = res.Table.Location,
                     NumberOfGuests = res.NumberOfGuests,
                     DateOfReservation = res.DateOfReservation,
-                    StartDate = res.StartDate,
-                    EndDate = res.EndDate
+                    StartTime = res.StartTime,
+                    EndTime = res.EndTime
                 })
                 .ToList();
 
@@ -121,9 +123,9 @@ namespace Restaurant.Controllers
                 {
                     if (dor.DateOfReservation == res.DateOfReservation)
                     {
-                        if (res.StartDate < dor.EndDate && res.EndDate > dor.StartDate)
+                        if (res.StartTime < dor.EndTime && res.EndTime > dor.StartTime)
                         {
-                            return BadRequest("هذا التاريخ محجوز مسبقاً. يرجى اختيار طاولة بديلة أو وقت آخر.");
+                            return BadRequest("هذا الوقت محجوز مسبقاً. يرجى اختيار طاولة بديلة أو وقت آخر.");
                         }
                     }
                 }
@@ -152,8 +154,8 @@ namespace Restaurant.Controllers
 
             var finalGuests = dto.NumberOfGuests ?? reservation.NumberOfGuests;
             var finalDate = dto.DateOfReservation ?? reservation.DateOfReservation;
-            var finalStart = dto.StartDate ?? reservation.StartDate;
-            var finalEnd = dto.EndDate ?? reservation.EndDate;
+            var finalStart = dto.StartTime ?? reservation.StartTime;
+            var finalEnd = dto.EndTime ?? reservation.EndTime;
             var finalTableId = dto.TableId ?? reservation.TableId;
 
             if (finalTableId > 0)
@@ -173,17 +175,17 @@ namespace Restaurant.Controllers
                 foreach (var tr in allReservations)
                 {
                     if (tr.DateOfReservation == finalDate &&
-                        finalStart < tr.EndDate &&
-                        finalEnd > tr.StartDate)
+                        finalStart < tr.EndTime &&
+                        finalEnd > tr.StartTime)
                     {
-                        return BadRequest("هذا التاريخ محجوز مسبقاً. يرجى اختيار تاريخ بديل.");
+                        return BadRequest("هذا الوقت محجوز مسبقاً. يرجى اختيار تاريخ بديل.");
                     }
                 }
             }
 
             reservation.DateOfReservation = finalDate;
-            reservation.StartDate = finalStart;
-            reservation.EndDate = finalEnd;
+            reservation.StartTime = finalStart;
+            reservation.EndTime = finalEnd;
             reservation.TableId = finalTableId;
             reservation.NumberOfGuests = finalGuests;
 
@@ -202,7 +204,7 @@ namespace Restaurant.Controllers
             var reservation = unitOfWork.Generic<Reservation>().GetById(id);
             if (reservation == null || reservation.UserId != userId)
                 return BadRequest("لا يمكنك حذف هذا الحجز.");
-            else if(reservation.ReservationStatus==ReservationStatus.Completed||reservation.IsPaid==true)
+            else if (reservation.ReservationStatus == ReservationStatus.Completed || reservation.IsPaid == true)
                 return BadRequest("لا يمكنك حذف هذا الحجز لأنه مدفوع");
 
             reservation.IsDeleted = true;
@@ -263,8 +265,8 @@ namespace Restaurant.Controllers
                     TableLocation = res.Table.Location,
                     NumberOfGuests = res.NumberOfGuests,
                     DateOfReservation = res.DateOfReservation,
-                    StartDate = res.StartDate,
-                    EndDate = res.EndDate
+                    StartTime = res.StartTime,
+                    EndTime = res.EndTime
                 }).ToList();
 
             return Ok(AllReservations);
@@ -294,13 +296,14 @@ namespace Restaurant.Controllers
                     TableLocation = res.Table.Location,
                     NumberOfGuests = res.NumberOfGuests,
                     DateOfReservation = res.DateOfReservation,
-                    StartDate = res.StartDate,
-                    EndDate = res.EndDate
+                    StartTime = res.StartTime,
+                    EndTime = res.EndTime
                 }).ToList();
 
             if (!reservations.Any()) return NotFound("لم يتم العثور على حجوزات محذوفة لهذا التاريخ.");
             return Ok(reservations);
         }
+
         [HttpPut("Restore")]
         [Authorize(Roles = "Admin,Customer,Staff,AdminAssistant")]
         public async Task<IActionResult> Restore(int id)
@@ -338,7 +341,6 @@ namespace Restaurant.Controllers
             return BadRequest("لا يمكنك استعادة هذا الحجز.");
         }
 
-
         [Authorize(Roles = "Admin,Customer,Staff,AdminAssistant")]
         [HttpPut("ConfirmReservation")]
         public async Task<IActionResult> ConfirmReservation(int id)
@@ -370,21 +372,26 @@ namespace Restaurant.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId != null)
             {
-                var ResFeedBack = await unitOfWork.Generic<ReservationFeedback>().GetAll().Where(ofb => ofb.IsDeleted == false && ofb.UserId == userId).Include(o => o.Reservation).Include(u => u.User).Select(ofb => new SetReservationFeedback
-                {
-                    Id = ofb.Id,
-                    UserId = ofb.UserId,
-                    Username = ofb.User.UserName,
-                    ReservationId = ofb.Reservation.Id,
-                    ReservationDate = ofb.Reservation.DateOfReservation,
-                    Comment = ofb.Comment,
-                    Rating = ofb.Rating,
-                    SubmittedOn = ofb.SubmittedOn
-                }).ToListAsync();
+                var ResFeedBack = await unitOfWork.Generic<ReservationFeedback>().GetAll()
+                    .Where(ofb => ofb.IsDeleted == false && ofb.UserId == userId)
+                    .Include(o => o.Reservation)
+                    .Include(u => u.User)
+                    .Select(ofb => new SetReservationFeedback
+                    {
+                        Id = ofb.Id,
+                        UserId = ofb.UserId,
+                        Username = ofb.User.UserName,
+                        ReservationId = ofb.Reservation.Id,
+                        ReservationDate = ofb.Reservation.DateOfReservation,
+                        Comment = ofb.Comment,
+                        Rating = ofb.Rating,
+                        SubmittedOn = ofb.SubmittedOn
+                    }).ToListAsync();
                 return Ok(ResFeedBack);
             }
             return Unauthorized("يمكنك رؤية ملاحظات حجوزاتك فقط.");
         }
+
         [HttpGet("GetReservationFeedbackByDate")]
         [Authorize(Roles = "Staff,Customer,Admin,AdminAssistant")]
         public IActionResult GetReservationFeedbackByDate(DateOnly date)
@@ -431,7 +438,7 @@ namespace Restaurant.Controllers
                     return NotFound("لم يتم العثور على الحجز.");
                 }
                 var now = DateTime.UtcNow;
-                var reservationEnd = res.DateOfReservation.ToDateTime(res.EndDate).ToUniversalTime();
+                var reservationEnd = res.DateOfReservation.ToDateTime(TimeOnly.FromTimeSpan(res.EndTime)).ToUniversalTime();
                 if (reservationEnd <= now)
                 {
                     var feedback = new ReservationFeedback
@@ -449,7 +456,6 @@ namespace Restaurant.Controllers
                     }
                     unitOfWork.Generic<ReservationFeedback>().Add(feedback);
                 }
-
                 else
                 {
                     return BadRequest("لا يمكنك تقديم ملاحظة لهذا الحجز قبل انتهائه.");
@@ -457,7 +463,6 @@ namespace Restaurant.Controllers
                 await unitOfWork.Complete();
                 return Ok("تمت إضافة ملاحظتك حول الحجز بنجاح.");
             }
-
         }
 
         [HttpPatch("ReservationFeedBack/{id:int}")]
@@ -527,28 +532,32 @@ namespace Restaurant.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId != null)
             {
-                var ResFeedBack = await unitOfWork.Generic<ReservationFeedback>().GetAll().Where(ofb => ofb.IsDeleted == true && ofb.UserId == userId).Include(o => o.Reservation).Include(u => u.User).Select(ofb => new SetReservationFeedback
-                {
-                    Id = ofb.Id,
-                    UserId = ofb.UserId,
-                    Username = ofb.User.UserName,
-                    ReservationDate = ofb.Reservation.DateOfReservation,
-                    ReservationId = ofb.Reservation.Id,
-                    Comment = ofb.Comment,
-                    Rating = ofb.Rating,
-                    SubmittedOn = ofb.SubmittedOn
-                }).ToListAsync();
+                var ResFeedBack = await unitOfWork.Generic<ReservationFeedback>().GetAll()
+                    .Where(ofb => ofb.IsDeleted == true && ofb.UserId == userId)
+                    .Include(o => o.Reservation)
+                    .Include(u => u.User)
+                    .Select(ofb => new SetReservationFeedback
+                    {
+                        Id = ofb.Id,
+                        UserId = ofb.UserId,
+                        Username = ofb.User.UserName,
+                        ReservationDate = ofb.Reservation.DateOfReservation,
+                        ReservationId = ofb.Reservation.Id,
+                        Comment = ofb.Comment,
+                        Rating = ofb.Rating,
+                        SubmittedOn = ofb.SubmittedOn
+                    }).ToListAsync();
                 return Ok(ResFeedBack);
             }
             return Unauthorized("يمكنك رؤية ملاحظات حجوزاتك المحذوفة فقط.");
         }
+
         [HttpGet("GetDeletedReservationFeedbackByDate")]
         [Authorize(Roles = "Staff,Customer,Admin,AdminAssistant")]
         public IActionResult GetDeletedReservationFeedbackByDate(DateOnly date)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return Unauthorized("غير مصرح لك بالوصول.");
+            if (userId == null) return Unauthorized("غير مصرح لك بالوصول.");
 
             var reservation = unitOfWork.Generic<ReservationFeedback>()
                 .GetAll()

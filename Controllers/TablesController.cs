@@ -26,13 +26,12 @@ namespace Restaurant.Controllers
             unitOfWork = UnitOfWork;
             mapping = Mapping;
         }
-
         [HttpGet]
         public async Task<IActionResult> GetAllTables(int PageNumber = 1, int PageSize = 20)
         {
             var now = DateTime.Now;
             var currentDate = DateOnly.FromDateTime(now);
-            var currentTime = TimeOnly.FromDateTime(now);
+            var currentTime = now.TimeOfDay;
 
             var tablesQuery = unitOfWork.Generic<Tables>()
                 .GetAll()
@@ -47,18 +46,19 @@ namespace Restaurant.Controllers
                 Capacity = table.Capacity,
                 Location = table.Location,
                 TableImage = table.TableImage,
+
                 Status =
-    table.Reservations.Any(r =>
-        r.DateOfReservation == currentDate &&
-        r.StartDate <= currentTime &&
-        currentTime < r.EndDate)
-    ? TableStatus.Occupied
-    : table.Reservations.Any(r =>
-        r.DateOfReservation == currentDate &&
-        r.StartDate > currentTime &&
-        r.StartDate <= currentTime.AddHours(1))
-        ? TableStatus.Reserved
-        : TableStatus.Available,
+                table.Reservations.Any(r =>
+                    r.DateOfReservation == currentDate &&
+                    r.StartTime <= currentTime &&
+                    currentTime < r.EndTime)
+                ? TableStatus.Occupied
+                : table.Reservations.Any(r =>
+                    r.DateOfReservation == currentDate &&
+                    r.StartTime > currentTime &&
+                    r.StartTime <= currentTime.Add(TimeSpan.FromHours(1)))
+                    ? TableStatus.Reserved
+                    : TableStatus.Available,
 
                 Reservations = table.Reservations.Select(r => new SetReservation
                 {
@@ -69,8 +69,8 @@ namespace Restaurant.Controllers
                     TableLocation = r.Table.Location,
                     NumberOfGuests = r.NumberOfGuests,
                     DateOfReservation = r.DateOfReservation,
-                    StartDate = r.StartDate,
-                    EndDate = r.EndDate,
+                    StartTime = r.StartTime,
+                    EndTime = r.EndTime,
                 }).ToList()
             });
 
@@ -82,12 +82,13 @@ namespace Restaurant.Controllers
         {
             var now = DateTime.Now;
             var currentDate = DateOnly.FromDateTime(now);
-            var currentTime = TimeOnly.FromDateTime(now);
+            var currentTime = now.TimeOfDay;
+
             var tables = unitOfWork.Generic<Tables>()
                 .GetAll()
                 .Include(t => t.Reservations)
-                .ThenInclude(r => r.User).Where(d => d.IsDeleted == false)
-                .Where(t => t.TableNumber == TableNumber)
+                .ThenInclude(r => r.User)
+                .Where(t => !t.IsDeleted && t.TableNumber == TableNumber)
                 .ToList();
 
             if (!tables.Any())
@@ -101,19 +102,15 @@ namespace Restaurant.Controllers
                     .Where(r => r.DateOfReservation == currentDate)
                     .ToList();
 
-                if (!todayReservations.Any())
-                {
-                    table.Status = TableStatus.Available;
-                }
-                else if (todayReservations.Any(r =>
-                         r.StartDate <= currentTime &&
-                         currentTime < r.EndDate))
+                if (todayReservations.Any(r =>
+                    r.StartTime <= currentTime &&
+                    currentTime < r.EndTime))
                 {
                     table.Status = TableStatus.Occupied;
                 }
                 else if (todayReservations.Any(r =>
-                            r.StartDate > currentTime &&
-                            r.StartDate <= currentTime.AddHours(1)))
+                    r.StartTime > currentTime &&
+                    r.StartTime <= currentTime.Add(TimeSpan.FromHours(1))))
                 {
                     table.Status = TableStatus.Reserved;
                 }
@@ -139,15 +136,15 @@ namespace Restaurant.Controllers
                         TableLocation = r.Table.Location,
                         NumberOfGuests = r.NumberOfGuests,
                         DateOfReservation = r.DateOfReservation,
-                        StartDate = r.StartDate,
-                        EndDate = r.EndDate,
+                        StartTime = r.StartTime,
+                        EndTime = r.EndTime,
                     }).ToList()
                 });
             }
 
             return Ok(results);
         }
-            [HttpPost]
+        [HttpPost]
         [Authorize(Roles = "Admin,AdminAssistant")]
         public async Task<IActionResult> CreateTable([FromForm] AddTablesDTO table)
         {
