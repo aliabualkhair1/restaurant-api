@@ -19,6 +19,8 @@ namespace DAL.Entities.Models
         public TimeOnly EndDate { get; set; }
         public int NumberOfGuests { get; set; }
         public ReservationStatus ReservationStatus { get; set; }
+        public DateTime? DeletionDate { get; set; } = null;
+        public bool IsPermanentDelete { get; set; } = false;
         public bool IsPaid { get; set; }
     }
 }

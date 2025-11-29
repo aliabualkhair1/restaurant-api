@@ -12,10 +12,14 @@ namespace DAL.Entities.Models
     {
         public string UserId { get; set; }
         public ApplicationUser User { get; set; }
-        public DateTime OrderDate { get; set; }
+        public DateOnly OrderDate { get; set; }
         public OrderStatus Status { get; set; }
         public ICollection<OrderItems> OrderItems { get; set; }
         public decimal TotalPrice { get; set; }
         public bool IsPaid { get; set; }
+        public DateTime? DeletionDate { get; set; } = null;
+        public bool IsPermanentDelete { get; set; } = false;
+
+
     }
 }

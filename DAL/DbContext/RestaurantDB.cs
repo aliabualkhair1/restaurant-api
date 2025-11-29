@@ -26,6 +26,7 @@ namespace DAL.DbContext
         public DbSet<OrderFeedback> OrdersFeedBack { get; set; }
         public DbSet<ReservationFeedback> ReservationsFeedBack { get; set; }
         public DbSet<ComplaintandSuggestion> ComplaintandSuggestion { get; set; }
+        public DbSet<ContactUs> ContactUs { get; set; }
 
     }
 

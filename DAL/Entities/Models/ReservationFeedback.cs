@@ -15,6 +15,6 @@ namespace DAL.Entities.Models
         public Reservation Reservation { get; set; }
         public string Comment { get; set; }
         public int Rating { get; set; }
-        public DateTime SubmittedOn { get; set; }
+        public DateOnly SubmittedOn { get; set; }
     }
 }

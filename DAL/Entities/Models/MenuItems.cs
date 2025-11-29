@@ -16,6 +16,7 @@ namespace DAL.Entities.Models
         public string ItemImage { get; set; }
         public int Quantity { get; set; }
         public decimal Price { get; set; }
+        public bool IsAvailable { get; set; } = true;
         public ICollection<OrderItems> OrderItems { get; set; }
     }
 }
