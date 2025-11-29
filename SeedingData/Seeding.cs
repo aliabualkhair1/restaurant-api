@@ -7,7 +7,6 @@ namespace Restaurant.SeedingData
     {
         public static async Task DataSeeding (IServiceProvider service)
         {
-        var UserManager=service.GetRequiredService<UserManager<ApplicationUser>>();
         var RoleManager=service.GetRequiredService<RoleManager<IdentityRole>>();
         string[] roles = { "Admin", "Customer","Staff","AdminAssistant"};
             foreach (var role in roles)
@@ -20,3 +19,4 @@ namespace Restaurant.SeedingData
         }
     }
 }
+
