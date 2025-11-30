@@ -26,111 +26,78 @@ namespace Restaurant.Controllers
             unitOfWork = UnitOfWork;
             mapping = Mapping;
         }
-        private TableStatus GetTableStatus(Tables table, DateOnly currentDate, TimeSpan currentTime)
-        {
-            if (table.Reservations.Any(r =>
-                r.DateOfReservation == currentDate &&
-                currentTime >= r.StartTime &&
-                currentTime < r.EndTime))
-                return TableStatus.Occupied;
-
-            if (table.Reservations.Any(r =>
-                r.DateOfReservation == currentDate &&
-                r.StartTime > currentTime &&
-                r.StartTime <= currentTime.Add(TimeSpan.FromHours(1))))
-                return TableStatus.Reserved;
-
-            return TableStatus.Available;
-        }
-
         [HttpGet]
         public async Task<IActionResult> GetAllTables(int PageNumber = 1, int PageSize = 20)
         {
-            var now = DateTime.Now;
-            var currentDate = DateOnly.FromDateTime(now);
-            var currentTime = now.TimeOfDay;
-
             var tablesQuery = unitOfWork.Generic<Tables>()
                 .GetAll()
-                .Include(t => t.Reservations).ThenInclude(r => r.User)
-                .Where(t => !t.IsDeleted)
-                .Select(table => new SetTable
+                .Include(t => t.Reservations)
+                    .ThenInclude(r => r.User)
+                .Where(t => !t.IsDeleted);
+
+            var paginatedTables = await Pagination<Tables>.CreateAsync(tablesQuery, PageNumber, PageSize);
+
+            var result = paginatedTables.Items.Select(table => new SetTable
+            {
+                Id = table.Id,
+                TableNumber = table.TableNumber,
+                Capacity = table.Capacity,
+                Location = table.Location,
+                TableImage = table.TableImage,
+                Reservations = table.Reservations.Select(r => new SetReservation
                 {
-                    Id = table.Id,
-                    TableNumber = table.TableNumber,
-                    Capacity = table.Capacity,
-                    Location = table.Location,
-                    TableImage = table.TableImage,
-                    Status = GetTableStatus(table, currentDate, currentTime),
-                    Reservations = table.Reservations.Select(r => new SetReservation
-                    {
-                        ReservationId = r.Id,
-                        UserId = r.UserId,
-                        Username = r.User.UserName,
-                        TableNumber = r.Table.TableNumber,
-                        TableLocation = r.Table.Location,
-                        NumberOfGuests = r.NumberOfGuests,
-                        DateOfReservation = r.DateOfReservation,
-                        StartTime = r.StartTime,
-                        EndTime = r.EndTime,
-                    }).ToList()
-                });
-
-            var paginatedResult = await Pagination<SetTable>
-                .CreateAsync(tablesQuery, PageNumber, PageSize);
-
-            return Ok(paginatedResult);
+                    ReservationId = r.Id,
+                    UserId = r.UserId,
+                    Username = r.User.UserName,
+                    TableNumber = r.Table.TableNumber,
+                    TableLocation = r.Table.Location,
+                    NumberOfGuests = r.NumberOfGuests,
+                    DateOfReservation = r.DateOfReservation,
+                    StartTime = r.StartTime,
+                    EndTime = r.EndTime
+                }).ToList()
+            }).ToList();
+            return Ok(new
+            {
+                Items = result
+            });
         }
-
         [HttpGet("GetTableByTableNumber")]
-        public IActionResult GetTableByTableNumber(string TableNumber)
+        public async Task<IActionResult> GetTableByTableNumber(string TableNumber)
         {
-            var now = DateTime.Now;
-            var currentDate = DateOnly.FromDateTime(now);
-            var currentTime = now.TimeOfDay;
-
             var tables = unitOfWork.Generic<Tables>()
                 .GetAll()
-                .Include(t => t.Reservations).ThenInclude(r => r.User)
+                .Include(t => t.Reservations)
+                    .ThenInclude(r => r.User)
                 .Where(t => !t.IsDeleted && t.TableNumber == TableNumber)
                 .ToList();
 
             if (!tables.Any())
                 return NotFound("لم يتم العثور على ترابيزات بهذا الرقم.");
 
-            var results = new List<SetTable>();
-
-            foreach (var table in tables)
+            var results = tables.Select(table => new SetTable
             {
-                var status = GetTableStatus(table, currentDate, currentTime);
-
-                results.Add(new SetTable
+                Id = table.Id,
+                TableNumber = table.TableNumber,
+                Capacity = table.Capacity,
+                Location = table.Location,
+                TableImage = table.TableImage,
+                Reservations = table.Reservations.Select(r => new SetReservation
                 {
-                    Id = table.Id,
-                    TableNumber = table.TableNumber,
-                    Capacity = table.Capacity,
-                    Location = table.Location,
-                    TableImage = table.TableImage,
-                    Status = status,
-                    Reservations = table.Reservations.Select(r => new SetReservation
-                    {
-                        ReservationId = r.Id,
-                        UserId = r.UserId,
-                        Username = r.User.UserName,
-                        TableNumber = r.Table.TableNumber,
-                        TableLocation = r.Table.Location,
-                        NumberOfGuests = r.NumberOfGuests,
-                        DateOfReservation = r.DateOfReservation,
-                        StartTime = r.StartTime,
-                        EndTime = r.EndTime,
-                    }).ToList()
-                });
-            }
+                    ReservationId = r.Id,
+                    UserId = r.UserId,
+                    Username = r.User.UserName,
+                    TableNumber = r.Table.TableNumber,
+                    TableLocation = r.Table.Location,
+                    NumberOfGuests = r.NumberOfGuests,
+                    DateOfReservation = r.DateOfReservation,
+                    StartTime = r.StartTime,
+                    EndTime = r.EndTime
+                }).ToList()
+            }).ToList();
 
             return Ok(results);
         }
-
-
         [HttpPost]
         [Authorize(Roles = "Admin,AdminAssistant")]
         public async Task<IActionResult> CreateTable([FromForm] AddTablesDTO table)
@@ -261,7 +228,6 @@ namespace Restaurant.Controllers
                     Capacity = res.Capacity,
                     Location = res.Location,
                     TableImage = res.TableImage,
-                    Status = res.Status,
                 });
 
             return Ok(getdeleted);
@@ -278,7 +244,6 @@ namespace Restaurant.Controllers
             var tables = unitOfWork.Generic<Tables>()
                 .GetAll()
                 .Include(t => t.Reservations).ThenInclude(r => r.User)
-                // تم إزالة تحميل r.Table
                 .Where(d => d.IsDeleted == true && d.TableNumber == TableNumber)
                 .ToList();
 
@@ -296,7 +261,6 @@ namespace Restaurant.Controllers
                     Capacity = table.Capacity,
                     Location = table.Location,
                     TableImage = table.TableImage,
-                    Status = table.Status
                 });
             }
 
