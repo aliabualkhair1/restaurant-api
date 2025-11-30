@@ -345,42 +345,45 @@ namespace Restaurant.Controllers
             }
             return Unauthorized();
         }
-
         [HttpGet("orderspaid")]
         [Authorize(Roles = "Admin,AdminAssistant")]
         public IActionResult orderspaid()
         {
-            var RoleId = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (RoleId != null)
+            var roleId = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (roleId == "Admin" || roleId == "AdminAssistant")
             {
-                if (RoleId == "Admin" || RoleId == "AdminAssistant")
-                {
-                    var orderspaid = unitOfWork.Generic<Orders>().GetAll().Where(op => op.IsPaid == true).Include(u => u.User).Select(o => new SetOrders
+                var orderspaid = unitOfWork.Generic<Orders>()
+                    .GetAll()
+                    .Where(o => o.IsPaid)
+                    .Include(o => o.User)
+                    .Include(o => o.OrderItems)
+                    .AsEnumerable()
+                    .GroupBy(o => new { o.UserId, o.User.UserName })
+                    .Select(g => new
                     {
-                        UserId = o.UserId,
-                        Username = o.User.UserName,
-                        OrderId = o.Id,
-                        OrderDate = o.OrderDate,
-                        Status = o.Status,
-                        OrderItems = o.OrderItems.Select(oi => new SetOrderItems
+                        UserId = g.Key.UserId,
+                        Username = g.Key.UserName,
+
+                        Orders = g.Select(o => new
                         {
-                            Id = oi.Id,
-                            MenuItemId = oi.MenuItemId,
-                            MenuName = oi.MenuItem.Menu.MenuName,
-                            ItemName = oi.ItemName,
-                            Quantity = oi.Quantity,
-                            Price = oi.Price,
-                            SubTotal = oi.SubTotal
+                            OrderId = o.Id,
+                            OrderDate = o.OrderDate,
+                            Status = o.Status,
+                            TotalPrice = o.OrderItems.Sum(i => i.SubTotal),
+                            IsPaid = o.IsPaid
                         }).ToList(),
-                        TotalPrice = o.OrderItems.Sum(res => res.SubTotal),
-                        IsPaid = o.IsPaid
-                    });
-                    return Ok(orderspaid);
-                }
-                return Unauthorized();
+
+                        TotalPaidOrders = g.Sum(o => o.OrderItems.Sum(i => i.SubTotal))
+                    })
+                    .ToList();
+
+                return Ok(orderspaid);
             }
+
             return Unauthorized();
         }
+
 
         [HttpGet("userorderspaid")]
         [Authorize(Roles = "Admin,AdminAssistant")]
@@ -423,33 +426,34 @@ namespace Restaurant.Controllers
         public IActionResult orderscancelled()
         {
             var RoleId = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (RoleId != null)
+
+            if (RoleId == "Admin" || RoleId == "AdminAssistant")
             {
-                if (RoleId == "Admin" || RoleId == "AdminAssistant")
-                {
-                    var orderscancelled = unitOfWork.Generic<Orders>().GetAll().Where(oc => oc.IsDeleted == true && oc.IsPermanentDelete == true).Include(u => u.User).Select(o => new SetOrders
+                var orderscancelled = unitOfWork.Generic<Orders>()
+                    .GetAll()
+                    .Where(o => o.IsDeleted && o.IsPermanentDelete)
+                    .Include(o => o.User)
+                    .Include(o => o.OrderItems)
+                    .AsEnumerable()
+                    .GroupBy(o => new { o.UserId, o.User.UserName })
+                    .Select(g => new
                     {
-                        UserId = o.UserId,
-                        Username = o.User.UserName,
-                        OrderId = o.Id,
-                        OrderDate = o.OrderDate,
-                        Status = o.Status,
-                        OrderItems = o.OrderItems.Select(oi => new SetOrderItems
+                        UserId = g.Key.UserId,
+                        Username = g.Key.UserName,
+                        Orders = g.Select(o => new
                         {
-                            Id = oi.Id,
-                            MenuItemId = oi.MenuItemId,
-                            MenuName = oi.MenuItem.Menu.MenuName,
-                            ItemName = oi.ItemName,
-                            Quantity = oi.Quantity,
-                            Price = oi.Price,
-                            SubTotal = oi.SubTotal
+                            OrderId = o.Id,
+                            OrderDate = o.OrderDate,
+                            Status = o.Status,
+                            TotalPrice = o.OrderItems.Sum(i => i.SubTotal)
                         }).ToList(),
-                        TotalPrice = o.OrderItems.Sum(res => res.SubTotal)
-                    });
-                    return Ok(orderscancelled);
-                }
-                return Unauthorized();
+                        TotalCancelledPrice = g.Sum(o => o.OrderItems.Sum(i => i.SubTotal))
+                    })
+                    .ToList();
+
+                return Ok(orderscancelled);
             }
+
             return Unauthorized();
         }
 
