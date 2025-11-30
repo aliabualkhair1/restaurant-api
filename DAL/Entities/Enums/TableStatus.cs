@@ -10,8 +10,7 @@ namespace DAL.Entities.Enums
     public enum TableStatus
     {
         Available,
-        Reserved,
-        Occupied
-
+        Reserved
     }
 }
+
