@@ -15,7 +15,6 @@ namespace DAL.DTOs.SetUp
         public int Capacity { get; set; }
         public Location Location { get; set; }
         public string TableImage { get; set; }
-        public TableStatus Status { get; set; }
         public ICollection<SetReservation> Reservations { get; set; }
     }
 }
