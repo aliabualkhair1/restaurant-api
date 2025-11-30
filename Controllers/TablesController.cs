@@ -26,6 +26,23 @@ namespace Restaurant.Controllers
             unitOfWork = UnitOfWork;
             mapping = Mapping;
         }
+        private TableStatus GetTableStatus(Tables table, DateOnly currentDate, TimeSpan currentTime)
+        {
+            if (table.Reservations.Any(r =>
+                r.DateOfReservation == currentDate &&
+                currentTime >= r.StartTime &&
+                currentTime < r.EndTime))
+                return TableStatus.Occupied;
+
+            if (table.Reservations.Any(r =>
+                r.DateOfReservation == currentDate &&
+                r.StartTime > currentTime &&
+                r.StartTime <= currentTime.Add(TimeSpan.FromHours(1))))
+                return TableStatus.Reserved;
+
+            return TableStatus.Available;
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAllTables(int PageNumber = 1, int PageSize = 20)
         {
@@ -35,48 +52,36 @@ namespace Restaurant.Controllers
 
             var tablesQuery = unitOfWork.Generic<Tables>()
                 .GetAll()
-                .Include(t => t.Reservations)
-                .ThenInclude(r => r.User)
-                .Where(t => !t.IsDeleted);
-
-            var projected = tablesQuery.Select(table => new SetTable
-            {
-                Id = table.Id,
-                TableNumber = table.TableNumber,
-                Capacity = table.Capacity,
-                Location = table.Location,
-                TableImage = table.TableImage,
-
-                Status =
-                table.Reservations.Any(r =>
-                    r.DateOfReservation == currentDate &&
-                    r.StartTime <= currentTime &&
-                    currentTime < r.EndTime)
-                ? TableStatus.Occupied
-                : table.Reservations.Any(r =>
-                    r.DateOfReservation == currentDate &&
-                    r.StartTime > currentTime &&
-                    r.StartTime <= currentTime.Add(TimeSpan.FromHours(1)))
-                    ? TableStatus.Reserved
-                    : TableStatus.Available,
-
-                Reservations = table.Reservations.Select(r => new SetReservation
+                .Include(t => t.Reservations).ThenInclude(r => r.User)
+                .Where(t => !t.IsDeleted)
+                .Select(table => new SetTable
                 {
-                    ReservationId = r.Id,
-                    UserId = r.UserId,
-                    Username = r.User.UserName,
-                    TableNumber = r.Table.TableNumber,
-                    TableLocation = r.Table.Location,
-                    NumberOfGuests = r.NumberOfGuests,
-                    DateOfReservation = r.DateOfReservation,
-                    StartTime = r.StartTime,
-                    EndTime = r.EndTime,
-                }).ToList()
-            });
+                    Id = table.Id,
+                    TableNumber = table.TableNumber,
+                    Capacity = table.Capacity,
+                    Location = table.Location,
+                    TableImage = table.TableImage,
+                    Status = GetTableStatus(table, currentDate, currentTime),
+                    Reservations = table.Reservations.Select(r => new SetReservation
+                    {
+                        ReservationId = r.Id,
+                        UserId = r.UserId,
+                        Username = r.User.UserName,
+                        TableNumber = r.Table.TableNumber,
+                        TableLocation = r.Table.Location,
+                        NumberOfGuests = r.NumberOfGuests,
+                        DateOfReservation = r.DateOfReservation,
+                        StartTime = r.StartTime,
+                        EndTime = r.EndTime,
+                    }).ToList()
+                });
 
-            var paginatedResult = await Pagination<SetTable>.CreateAsync(projected, PageNumber, PageSize);
+            var paginatedResult = await Pagination<SetTable>
+                .CreateAsync(tablesQuery, PageNumber, PageSize);
+
             return Ok(paginatedResult);
         }
+
         [HttpGet("GetTableByTableNumber")]
         public IActionResult GetTableByTableNumber(string TableNumber)
         {
@@ -86,8 +91,7 @@ namespace Restaurant.Controllers
 
             var tables = unitOfWork.Generic<Tables>()
                 .GetAll()
-                .Include(t => t.Reservations)
-                .ThenInclude(r => r.User)
+                .Include(t => t.Reservations).ThenInclude(r => r.User)
                 .Where(t => !t.IsDeleted && t.TableNumber == TableNumber)
                 .ToList();
 
@@ -98,26 +102,7 @@ namespace Restaurant.Controllers
 
             foreach (var table in tables)
             {
-                var todayReservations = table.Reservations
-                    .Where(r => r.DateOfReservation == currentDate)
-                    .ToList();
-
-                if (todayReservations.Any(r =>
-                    r.StartTime <= currentTime &&
-                    currentTime < r.EndTime))
-                {
-                    table.Status = TableStatus.Occupied;
-                }
-                else if (todayReservations.Any(r =>
-                    r.StartTime > currentTime &&
-                    r.StartTime <= currentTime.Add(TimeSpan.FromHours(1))))
-                {
-                    table.Status = TableStatus.Reserved;
-                }
-                else
-                {
-                    table.Status = TableStatus.Available;
-                }
+                var status = GetTableStatus(table, currentDate, currentTime);
 
                 results.Add(new SetTable
                 {
@@ -126,7 +111,7 @@ namespace Restaurant.Controllers
                     Capacity = table.Capacity,
                     Location = table.Location,
                     TableImage = table.TableImage,
-                    Status = table.Status,
+                    Status = status,
                     Reservations = table.Reservations.Select(r => new SetReservation
                     {
                         ReservationId = r.Id,
@@ -144,46 +129,46 @@ namespace Restaurant.Controllers
 
             return Ok(results);
         }
+
+
         [HttpPost]
         [Authorize(Roles = "Admin,AdminAssistant")]
         public async Task<IActionResult> CreateTable([FromForm] AddTablesDTO table)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null)
-            {
                 return Unauthorized("غير مصرح لك بالوصول.");
-            }
-            else
+
+            if (table == null)
+                return BadRequest("بيانات الترابيزة غير صالحة.");
+
+            var imageName = Guid.NewGuid().ToString() + Path.GetExtension(table.TableImage.FileName);
+            var Folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+            Directory.CreateDirectory(Folder);
+
+            var IMGPath = Path.Combine(Folder, imageName);
+            using (var stream = new FileStream(IMGPath, FileMode.Create))
             {
-                if (table == null)
-                {
-                    return BadRequest("بيانات الترابيزة غير صالحة.");
-                }
-                var imageName = Guid.NewGuid().ToString() + Path.GetExtension(table.TableImage.FileName);
-                var Folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
-                Directory.CreateDirectory(Folder);
-                var IMGPath = Path.Combine(Folder, imageName);
-                using (var stream = new FileStream(IMGPath, FileMode.Create))
-                {
-                    await table.TableImage.CopyToAsync(stream);
-                }
-                ;
-                var tables = unitOfWork.Generic<Tables>().GetAll().ToList();
-                foreach(var t in tables)
-                {
-                    if(table.TableNumber == t.TableNumber)
-                    {
-                        return BadRequest("من فضلك إختر رقم أخر للترابيزة لأنه موجود مسبقا");
-                    }
-                }
-                var mappedTable = mapping.Map<Tables>(table);
-                mappedTable.TableImage = imageName;
-                mappedTable.IsDeleted = false;
-                mappedTable.Status = TableStatus.Available;
-                unitOfWork.Generic<Tables>().Add(mappedTable);
-                await unitOfWork.Complete();
-                return Ok("تمت إضافة الترابيزة بنجاح.");
+                await table.TableImage.CopyToAsync(stream);
             }
+
+            var tables = unitOfWork.Generic<Tables>().GetAll().ToList();
+            foreach (var t in tables)
+            {
+                if (table.TableNumber == t.TableNumber)
+                {
+                    return BadRequest("من فضلك إختر رقم أخر للترابيزة لأنه موجود مسبقا");
+                }
+            }
+
+            var mappedTable = mapping.Map<Tables>(table);
+            mappedTable.TableImage = imageName;
+            mappedTable.IsDeleted = false;
+            mappedTable.Status = TableStatus.Available;
+
+            unitOfWork.Generic<Tables>().Add(mappedTable);
+            await unitOfWork.Complete();
+            return Ok("تمت إضافة الترابيزة بنجاح.");
         }
 
         [HttpPatch("{id:int}")]
@@ -206,14 +191,16 @@ namespace Restaurant.Controllers
 
             table.Capacity = finalCapacity;
             table.Location = finalLocation;
+
             var existtable = unitOfWork.Generic<Tables>().GetAll().ToList();
-            foreach(var t in existtable)
+            foreach (var t in existtable)
             {
                 if (dto.TableNumber == t.TableNumber)
                 {
                     return BadRequest("من فضلك إختر رقم أخر للترابيزة لأنه موجود مسبقا");
                 }
             }
+
             table.TableNumber = finalTableNumber;
 
             if (dto.TableImage != null)
@@ -226,6 +213,7 @@ namespace Restaurant.Controllers
                 }
 
                 imageName = Guid.NewGuid().ToString() + Path.GetExtension(dto.TableImage.FileName);
+
                 var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
                 Directory.CreateDirectory(folder);
 
@@ -235,45 +223,47 @@ namespace Restaurant.Controllers
                     await dto.TableImage.CopyToAsync(stream);
                 }
             }
+
             table.TableImage = imageName;
             await unitOfWork.Complete();
             return Ok("تم تحديث الترابيزة بنجاح.");
         }
+
         [HttpPut("SoftDelete")]
         [Authorize(Roles = "Admin,AdminAssistant")]
         public async Task<IActionResult> DeleteTable(int id)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null)
-            {
                 return Unauthorized("غير مصرح لك بالوصول.");
-            }
-            else
-            {
-                var check = unitOfWork.Generic<Tables>().GetById(id);
-                if (check == null)
-                {
-                    return NotFound("لم يتم العثور على الترابيزة.");
-                }
-                check.IsDeleted = true;
-                await unitOfWork.Complete();
-                return Ok("تم حذف الترابيزة بنجاح .");
-            }
+
+            var check = unitOfWork.Generic<Tables>().GetById(id);
+
+            if (check == null)
+                return NotFound("لم يتم العثور على الترابيزة.");
+
+            check.IsDeleted = true;
+            await unitOfWork.Complete();
+            return Ok("تم حذف الترابيزة بنجاح .");
         }
 
         [HttpGet("GetAllDeletedTable")]
         [Authorize(Roles = "Admin,AdminAssistant")]
         public IActionResult GetAllDeletedTable()
         {
-            var getdeleted = unitOfWork.Generic<Tables>().GetAll().Where(t => t.IsDeleted == true).Select(res => new SetTable
-            {
-                Id = res.Id,
-                TableNumber = res.TableNumber,
-                Capacity = res.Capacity,
-                Location = res.Location,
-                TableImage = res.TableImage,
-                Status = res.Status,
-            });
+            var getdeleted = unitOfWork.Generic<Tables>()
+                .GetAll()
+                .Where(t => t.IsDeleted == true)
+                .Select(res => new SetTable
+                {
+                    Id = res.Id,
+                    TableNumber = res.TableNumber,
+                    Capacity = res.Capacity,
+                    Location = res.Location,
+                    TableImage = res.TableImage,
+                    Status = res.Status,
+                });
+
             return Ok(getdeleted);
         }
 
@@ -287,9 +277,10 @@ namespace Restaurant.Controllers
 
             var tables = unitOfWork.Generic<Tables>()
                 .GetAll()
-                .Include(t => t.Reservations)
-                .ThenInclude(r => r.User).Where(d => d.IsDeleted == true)
-                .Where(t => t.TableNumber == TableNumber).ToList();
+                .Include(t => t.Reservations).ThenInclude(r => r.User)
+                // تم إزالة تحميل r.Table
+                .Where(d => d.IsDeleted == true && d.TableNumber == TableNumber)
+                .ToList();
 
             if (!tables.Any())
                 return NotFound("لم يتم العثور على ترابيزات محذوفة بهذا الرقم.");
@@ -312,16 +303,14 @@ namespace Restaurant.Controllers
             return Ok(results);
         }
 
-
         [HttpPut("Restore")]
         [Authorize(Roles = "Admin,AdminAssistant")]
         public async Task<IActionResult> Restore(int id)
         {
             var check = unitOfWork.Generic<Tables>().GetById(id);
             if (check == null)
-            {
                 return NotFound("لم يتم العثور على الترابيزة.");
-            }
+
             check.IsDeleted = false;
             await unitOfWork.Complete();
             return Ok("تم استعادة الترابيزة بنجاح.");

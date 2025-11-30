@@ -29,37 +29,39 @@ namespace Restaurant.Controllers
             mapping = Mapping;
             ilogger = Ilogger;
         }
-
         [HttpGet]
         [Authorize(Roles = "Staff,Customer,Admin,AdminAssistant")]
         public IActionResult GetAllReservations()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId != null)
-            {
-                var AllReservations = unitOfWork.Generic<Reservation>().GetAll()
-                    .Where(res => res.IsDeleted == false && res.UserId == userId)
-                    .Select(res => new SetReservation
-                    {
-                        ReservationId = res.Id,
-                        Status = res.ReservationStatus,
-                        UserId = res.UserId,
-                        Username = res.User.UserName,
-                        TableNumber = res.Table.TableNumber,
-                        TableLocation = res.Table.Location,
-                        NumberOfGuests = res.NumberOfGuests,
-                        DateOfReservation = res.DateOfReservation,
-                        StartTime = res.StartTime,
-                        EndTime = res.EndTime,
-                        IsPaid = res.IsPaid,
-                        IsDeleted = res.IsDeleted,
-                        IsPermanentDelete = res.IsPermanentDelete
-                    });
-                return Ok(AllReservations);
-            }
-            return Unauthorized("غير مصرح لك بالوصول.");
-        }
+            if (userId == null)
+                return Unauthorized("غير مصرح لك بالوصول.");
 
+            var AllReservations = unitOfWork.Generic<Reservation>()
+                .GetAll()
+                .Include(r => r.User)
+                .Include(r => r.Table)
+                .Where(res => !res.IsDeleted && res.UserId == userId)
+                .Select(res => new SetReservation
+                {
+                    ReservationId = res.Id,
+                    Status = res.ReservationStatus,
+                    UserId = res.UserId,
+                    Username = res.User.UserName,
+                    TableNumber = res.Table.TableNumber,
+                    TableLocation = res.Table.Location,
+                    NumberOfGuests = res.NumberOfGuests,
+                    DateOfReservation = res.DateOfReservation,
+                    StartTime = res.StartTime,
+                    EndTime = res.EndTime,
+                    IsPaid = res.IsPaid,
+                    IsDeleted = res.IsDeleted,
+                    IsPermanentDelete = res.IsPermanentDelete
+                })
+                .ToList();
+
+            return Ok(AllReservations);
+        }
         [HttpGet("GetByDate")]
         [Authorize(Roles = "Staff,Customer,Admin,AdminAssistant")]
         public IActionResult GetReservationByDate(DateOnly date)
