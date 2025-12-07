@@ -11,6 +11,7 @@ namespace DAL.Entities.Enums
         Admin,
         Customer,
         Staff,
-        AdminAssistants
+        AdminAssistant
     }
 }
+
